@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Juego de Memoria Navideño</title>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f0f0f0;
+      font-family: 'Times New Roman', serif;
+    }
+
+    #timer {
+      font-size: 24px;
+      font-weight: bold;
+      font-style: italic;
+      margin-top: 20px;
+    }
+
+    #game-board {
+      display: grid;
+      grid-template-columns: repeat(6, 100px);
+      grid-gap: 10px;
+    }
+
+    .card {
+      position: relative;
+      width: 100px;
+      height: 100px;
+      perspective: 1000px;
+    }
+
+    .card-inner {
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      transition: transform 0.5s;
+      cursor: pointer;
+    }
+
+    .card.flip .card-inner {
+      transform: rotateY(180deg);
+    }
+
+    .card-front,
+    .card-back {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      backface-visibility: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 24px;
+    }
+
+    .card-front {
+      background-color: red;
+    }
+
+    .card-back {
+      background-color: #fff;
+      transform: rotateY(180deg);
+    }
+
+    .card-front img {
+      width: 100%;
+      height: 100%;
+    }
+
+    #victory-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(255, 255, 255, 0.8);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      font-weight: bold;
+      z-index: 1000;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="timer">Tiempo: 0 segundos</div>
+  <div id="game-board"></div>
+  <div id="victory-screen">
+    <p>¡Has ganado!</p>
+    <p>Tiempo: <span id="victory-time">0 segundos</span></p>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const emojis = ['🎄', '🎅', '🎁', '⛄', '🔔', '🦌', '🍪', '❄️', '🕯️', '🌟', '🤶', '🌨️'];
+
+      const cards = emojis.concat([...emojis]);
+
+      cards.sort(() => Math.random() - 0.5);
+
+      const gameBoard = document.getElementById('game-board');
+      const timerElement = document.getElementById('timer');
+      const victoryScreen = document.getElementById('victory-screen');
+      const victoryTimeElement = document.getElementById('victory-time');
+      let startTime;
+      let timerInterval;
+
+      cards.forEach((emoji, index) => {
+        const card = document.createElement('div');
+        card.classList.add('card');
+        
+        const cardInner = document.createElement('div');
+        cardInner.classList.add('card-inner');
+        card.appendChild(cardInner);
+
+        const cardFront = document.createElement('div');
+        cardFront.classList.add('card-front');
+        const frontImage = document.createElement('img');
+        frontImage.src = 'patron.jpg'; // Ruta de tu imagen
+        cardFront.appendChild(frontImage);
+        cardInner.appendChild(cardFront);
+
+        const cardBack = document.createElement('div');
+        cardBack.classList.add('card-back');
+        cardBack.innerHTML = emoji;
+        cardInner.appendChild(cardBack);
+
+        card.addEventListener('click', flipCard);
+        gameBoard.appendChild(card);
+      });
+
+      let flippedCards = [];
+      let lockedBoard = false;
+
+      function flipCard() {
+        if (lockedBoard) return;
+
+        const card = this;
+        card.classList.add('flip');
+        flippedCards.push(card);
+
+        if (flippedCards.length === 2) {
+          lockedBoard = true;
+          setTimeout(checkForMatch, 500);
+        }
+
+        // Inicia el cronómetro en el primer clic
+        if (!startTime) {
+          startTime = new Date().getTime();
+          timerInterval = setInterval(updateTimer, 1000);
+        }
+      }
+
+      function checkForMatch() {
+        const [firstCard, secondCard] = flippedCards;
+        const isMatch = firstCard.innerHTML === secondCard.innerHTML;
+
+        isMatch ? disableCards() : unflipCards();
+
+        flippedCards = [];
+        lockedBoard = false;
+
+        // Verifica si todas las cartas se han emparejado
+        if (document.querySelectorAll('.card:not(.flip)').length === 0) {
+          clearInterval(timerInterval);
+          displayVictoryScreen();
+        }
+      }
+
+      function disableCards() {
+        flippedCards.forEach(card => {
+          card.removeEventListener('click', flipCard);
+        });
+      }
+
+      function unflipCards() {
+        flippedCards.forEach(card => {
+          card.classList.remove('flip');
+        });
+      }
+
+      function updateTimer() {
+        const elapsedTime = getElapsedTime();
+        timerElement.textContent = `Tiempo: ${elapsedTime} segundos`;
+      }
+
+      function getElapsedTime() {
+        const currentTime = new Date().getTime();
+        const elapsedSeconds = Math.floor((currentTime - startTime) / 1000);
+        return elapsedSeconds;
+      }
+
+      function displayVictoryScreen() {
+        const elapsedTime = getElapsedTime();
+        victoryTimeElement.textContent = `${elapsedTime} segundos`;
+        victoryScreen.style.display = 'flex';
+      }
+    });
+  </script>
+</body>
+</html>
